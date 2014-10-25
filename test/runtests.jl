@@ -1,5 +1,11 @@
-using PropertyGraph
-using Base.Test
+tests =["testdata",
+		"populategraphtest",
+        "compositequerytest"]
 
-# write your own tests here
-@test 1 == 1
+println("Running tests:")
+
+for t in tests
+    testfilepath = joinpath(Pkg.dir("PropertyGraph"),"test","$(t).jl")
+    println("running $(testfilepath) ...")
+    include(testfilepath)
+end
