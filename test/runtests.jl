@@ -1,3 +1,5 @@
+using Compat
+
 tests =["testdata",
 		"populategraphtest",
         "compositequerytest"]

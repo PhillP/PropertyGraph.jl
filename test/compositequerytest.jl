@@ -44,6 +44,38 @@ function compositequerytest()
 	averageadjacentpopulation = average(q, v->get(v, "population"))
 	# expect the maximum of the adjacent populations to be the population of new south wales
 	@test ifloor(averageadjacentpopulation) == 3118566
+
+	# test short form queries
+	countadjacentstates = query(g,
+			  (vertices, v-> get(v,"name") == "Queensland" || get(v,"name") == "Victoria"),
+			  (outgoing, e->e.typelabel == "IsAdjacent"),
+			  head,
+			  distinct,
+			  count
+			 )
+	@test countadjacentstates == 3
+
+	averageadjacentpopulation = query(g,
+				 (vertices, v-> get(v,"name") == "Queensland1" || get(v,"name") == "Victoria1"),
+				 (outgoing, e->e.typelabel == "IsAdjacent"),
+				 head,
+				 distinct,
+				 (average, v->get(v, "population"))
+			)
+	@test averageadjacentpopulation == UnspecifiedValue
+
+	#test building the query in parts
+	q = query(g,
+				(vertices, v-> get(v,"name") == "Queensland" || get(v,"name") == "Victoria"),
+			 	(outgoing, e->e.typelabel == "IsAdjacent"),
+			 )
+	# build the rest of the query
+	averageadjacentpopulation = query(q,
+				 head,
+				 distinct,
+				 (average, v->get(v, "population"))
+			 )
+	@test ifloor(averageadjacentpopulation) == 3118566
 end
 
 compositequerytest()

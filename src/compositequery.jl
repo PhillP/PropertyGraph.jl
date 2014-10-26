@@ -317,3 +317,19 @@ function doesitemmatchquery(item::Container, cq::CompositeQuery)
 	return match
 end
 
+QuerySource = Union(Graph,CompositeQuery)
+QueryOperation = Union(Function,(Function, Function))
+
+function query(source::QuerySource,operations::QueryOperation...)
+	current = source
+
+	for operation in operations
+		if isa(operation,Function)
+			current = operation(current)
+		elseif isa(operation, (Function,Function))
+			current = operation[1](current, operation[2])
+		end
+	end
+
+	return current
+end

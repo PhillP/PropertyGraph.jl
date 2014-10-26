@@ -1,6 +1,7 @@
 using Base.Test
 using PropertyGraph
 using UUID
+using Compat
 
 # run the test within a function scope to avoid interference with other tests
 
@@ -21,7 +22,7 @@ function graphpopulationtest()
 	g = Graph()
 
 	# create a vertex and add it to the graph
-	fred = add!(g, Vertex("Person", Dict{String,Any}(["name"=>"Fred","age"=>45])))
+	fred = add!(g, Vertex("Person", @compat Dict{String,Any}("name"=>"Fred","age"=>45)))
 	# and test that it was initialised as expected
 	# it should belong to the graph
 	@test fred.graph == g
@@ -32,7 +33,7 @@ function graphpopulationtest()
 	setPropertyValue!(fred, "other", 100)
 	@test get(fred,"other") == 100
 
-	setPropertyValues!(fred, Dict{String,Any}(["other"=>101,"new"=>"new value"]))
+	setPropertyValues!(fred, @compat Dict{String,Any}("other"=>101,"new"=>"new value"))
 	@test get(fred,"other") == 101
 	@test get(fred,"new") == "new value"
 
@@ -63,10 +64,10 @@ function graphpopulationtest()
 	@test isa(caughtexception, VertexAlreadyBelongsToAnotherGraphException)
 
 	# make some more vertices
-	sally = add!(g, Vertex("Person", Dict{String,Any}(["name"=>"Sally","age"=>25])))
+	sally = add!(g, Vertex("Person", @compat Dict{String,Any}("name"=>"Sally","age"=>25)))
 
 	johanobject = TestCustomPersonType("Johan", "Smith")
-	johan = VertexForObject("Person", johanobject,  Dict{String,Any}(["name"=>"Johan","age"=>28]))
+	johan = VertexForObject("Person", johanobject,  @compat Dict{String,Any}("name"=>"Johan","age"=>28))
 	@test johan.containedobject == johanobject
 	add!(g, johan)
 
@@ -75,7 +76,7 @@ function graphpopulationtest()
 
 	# create some edges
 	e = Edge(fred,sally)
-	e2 = Edge("knows", fred, sally, Dict{String,Any}(["since"=>2004]))
+	e2 = Edge("knows", fred, sally, @compat Dict{String,Any}("since"=>2004))
 	@test get(e2,"since") == 2004
 
 	#including one with an associated object
