@@ -29,9 +29,11 @@ For the moment, Graphs must be held entirely in memory.  This is an area for fut
 
 ## Installation
 
+*Installation through the Package manager is not yet available.  These instructions can not be used until metadata for the package is registered*
+
 Install PropertyGraph.jl with:
 ```
-Pkg.add("PropertyGraph")
+Not yet available: Pkg.add("PropertyGraph")
 ```
 
 If PropertyGraph.jl is not recognised you may first need to update your package metadata with:
