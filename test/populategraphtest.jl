@@ -30,10 +30,10 @@ function graphpopulationtest()
 	@test get(fred,"name") == "Fred"
 	@test get(fred,"age") == 45
 
-	setPropertyValue!(fred, "other", 100)
+	setpropertyvalue!(fred, "other", 100)
 	@test get(fred,"other") == 100
 
-	setPropertyValues!(fred, @compat Dict{String,Any}("other"=>101,"new"=>"new value"))
+	setpropertyvalues!(fred, @compat Dict{String,Any}("other"=>101,"new"=>"new value"))
 	@test get(fred,"other") == 101
 	@test get(fred,"new") == "new value"
 
@@ -67,7 +67,7 @@ function graphpopulationtest()
 	sally = add!(g, Vertex("Person", @compat Dict{String,Any}("name"=>"Sally","age"=>25)))
 
 	johanobject = TestCustomPersonType("Johan", "Smith")
-	johan = VertexForObject("Person", johanobject,  @compat Dict{String,Any}("name"=>"Johan","age"=>28))
+	johan = vertexforobject("Person", johanobject,  @compat Dict{String,Any}("name"=>"Johan","age"=>28))
 	@test johan.containedobject == johanobject
 	add!(g, johan)
 
@@ -81,7 +81,7 @@ function graphpopulationtest()
 
 	#including one with an associated object
 	fredknowsjohanobject = TestKnowsType("SomeValue")
-	e3 = EdgeForObject("knows", fredknowsjohanobject, fred,johan)
+	e3 = edgeforobject("knows", fredknowsjohanobject, fred,johan)
 	@test e3.containedobject == fredknowsjohanobject
 
 	# add the edges to the graph

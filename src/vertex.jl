@@ -37,14 +37,14 @@ type Vertex <: Container
 	end
 end
 
-function VertexForObject(object::Any, properties::Dict{String,Any}=Dict{String,Any}())
+function vertexforobject(object::Any, properties::Dict{String,Any}=Dict{String,Any}())
 	v = Vertex(properties)
 	v.containedobject = object
 
 	return v
 end
 
-function VertexForObject(typelabel::String, object::Any, properties::Dict{String,Any}=Dict{String,Any}())
+function vertexforobject(typelabel::String, object::Any, properties::Dict{String,Any}=Dict{String,Any}())
 	v = Vertex(properties)
 	v.typelabel = typelabel
 	v.containedobject = object

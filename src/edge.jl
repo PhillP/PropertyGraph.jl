@@ -36,14 +36,14 @@ type Edge <: Container
 	end
 end
 
-function EdgeForObject(object::Any, tail::Vertex, head::Vertex, properties::Dict{String,Any}=Dict{String,Any}())
+function edgeforobject(object::Any, tail::Vertex, head::Vertex, properties::Dict{String,Any}=Dict{String,Any}())
 	e = Edge(tail, head, properties)
 	e.containedobject = object
 
 	return e
 end
 
-function EdgeForObject(typelabel::String, object::Any, tail::Vertex, head::Vertex, properties::Dict{String,Any}=Dict{String,Any}())
+function edgeforobject(typelabel::String, object::Any, tail::Vertex, head::Vertex, properties::Dict{String,Any}=Dict{String,Any}())
 	e = Edge(typelabel, tail, head, properties)
 	e.containedobject = object
 

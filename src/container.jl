@@ -3,11 +3,11 @@ abstract Container
 type Unspecified end
 const UnspecifiedValue = Unspecified()
 
-function setPropertyValue!(c::Container, propertykey::String, value::Any)
+function setpropertyvalue!(c::Container, propertykey::String, value::Any)
 	c.attachedproperties[propertykey] = value
 end
 
-function setPropertyValues!(c::Container, properties::Dict{String, Any} )
+function setpropertyvalues!(c::Container, properties::Dict{String, Any} )
 	merge!(c.attachedproperties, properties)
 end
 

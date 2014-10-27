@@ -4,7 +4,7 @@ using UUID
 
 # type exports
 export Graph, Vertex, Edge, Container, CompositeQuery
-export EdgeForObject, VertexForObject
+export edgeforobject, vertexforobject
 # Exceptions.jl exports
 export VertexAlreadyBelongsToAnotherGraphException, EdgeAlreadyBelongsToAnotherGraphException
 export VertexAlreadyBelongsToSpecifiedGraphException, EdgeAlreadyBelongsToSpecifiedGraphException
@@ -14,7 +14,7 @@ export InvalidOutputQueryResultTypeException, MissingPreviousQueryContextExcepti
 export MissingPreviousQueryContextResultException, InvalidQueryOptionOutputTypeCombinationException
 export InvalidInputOutputQueryOptionCombinationException, CompositeQueryResultNotRealisedException
 # Container.jl exports
-export setPropertyValue!, setPropertyValues!,get, UnspecifiedValue
+export setpropertyvalue!, setpropertyvalues!,get, UnspecifiedValue
 # Vertex.jl exports
 # Edge.jl exports
 # Graph.jl exports
