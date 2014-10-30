@@ -1,8 +1,10 @@
 using Compat
 
 tests =["testdata",
+		"testdatasocial",
 		"populategraphtest",
-        "compositequerytest"]
+        "compositequerytest",
+		"socialgraphtest"]
 
 println("Running tests:")
 
@@ -11,3 +13,7 @@ for t in tests
     println("running $(testfilepath) ...")
     include(testfilepath)
 end
+
+
+testcount = socialgraphtest()
+testcount

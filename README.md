@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/PhillP/PropertyGraph.jl.svg?branch=master)](https://travis-ci.org/PhillP/PropertyGraph.jl)
 
-PropertyGraph.jl is a Julia package for creating and querying graph data structures.  A Graph consists of Vertices connected by Edges.  Each Vertex and Edge has properties, an identifier and optionally a reference to any arbitrary object.
+PropertyGraph.jl is a Julia package for creating and querying graph data structures.  A Graph consists of Vertices connected by Edges.  Vertices and Edges each have properties, an identifier and optionally a reference to any arbitrary object so that existing objects can be organised into graphs.
 
 ## Querying
 
@@ -10,17 +10,25 @@ Querying in PropertyGraph.jl is performed by:
  - building up a query object (::CompositeQuery) that contains a list of graph traversals and operations to be performed.
  - retrieving results from the query (which causes the query to execute when needed)
 
-A query, or portions of a query can be reused; and this avoids repeat processing of the same traversals.
+A query, or portions of a query can be reused to avoid repeat processing of the common traversals.
 
 The simplest way of building a query is  to use the query varargs method.  This method allows queries to be written as a list of operations in a simple DSL as per the following example.
 ```
-averagepopulaton = query(graph, # start with a graph
-			  (vertices, v-> get(v,"name") == "Queensland" || get(v,"name") == "Victoria"), # select the vertices that match some condition
-			  (outgoing, e->e.typelabel == "IsAdjacent"), # follow the outgoing edges from these vertices where the edges are of type IsAdjacent
-			  head, # move to the vertices at the head of those edges
-			  distinct, # retain only 1 instance of each vertex(as some vertexes may have been reached by more than 1 path)
+averagepopulaton = query(graph,
+			  (vertices, v-> get(v,"name") == "Queensland" || get(v,"name") == "Victoria"),
+			  (outgoing, e->e.typelabel == "IsAdjacent"),
+			  head,
+			  distinct,
 			  (average, v->get(v, "population") # average the value of population property
 			 )
+
+The query above contains the following steps:
+	# start with a graph
+	# select the vertices that match some condition
+	# follow the outgoing edges from these vertices where the edges are of type IsAdjacent
+	# move to the vertices at the head of those edges
+	# retain only 1 instance of each vertex(as some vertices may have been reached by more than 1 path)
+	# average the value of population property
 ```
 
 The above example and others are explained in the [wiki](https://github.com/PhillP/PropertyGraph.jl/wiki).
