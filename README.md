@@ -4,6 +4,14 @@
 
 PropertyGraph.jl is a Julia package for creating and querying graph data structures.  A Graph consists of Vertices connected by Edges.  Vertices and Edges each have properties, an identifier and optionally a reference to any arbitrary object so that existing objects can be organised into graphs.
 
+## Documentation
+
+The primary documentation for PropertyGraph.jl is the [wiki](https://github.com/PhillP/PropertyGraph.jl/wiki) which contains guidance, instructions and examples.
+
+## Inspiration
+
+There are various sources of inspiration for this package, including the [Gremlin](https://github.com/tinkerpop/gremlin/wiki) graph traversal language for the JVM.
+
 ## Querying
 
 Querying in PropertyGraph.jl is performed by:
@@ -52,19 +60,3 @@ Pkg.update()
 PropertyGraph.jl has a dependency on the following 2 packages:
 - the [Compat](https://github.com/JuliaLang/Compat.jl) package for Julia 0.3/0.4 compatibility
 - the [UUID](https://github.com/forio/UUID.jl) for generation of unique identifiers
-
-## Roadmap
-
-There are several key areas for developemnt:
- - extend query capabilities
- - integration with [DataFrames](https://github.com/JuliaStats/DataFrames.jl) (using DataFrames as a source for building graphs, and generating query results as DataFrames)
- - reading and writing graphs from various formats
- - reading (on-demand) and writing to/from persistent stores
-
-## Inspiration
-
-There are various sources of inspiration for this package, including the [Gremlin](https://github.com/tinkerpop/gremlin/wiki) graph traversal language for the JVM.  However, an aim is to develop features within this package that will be of most benefit to Julia users.
-
-## Documentation
-
-The documentation for PropertyGraph.jl will be available on the [wiki](https://github.com/PhillP/PropertyGraph.jl/wiki).
