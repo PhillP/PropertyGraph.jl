@@ -1,4 +1,6 @@
 type Edge <: Container
+	# Represents the edge between 2 vertices
+
 	id::UUID.Uuid
 	containedobject::Any
 	attachedproperties::Dict{String,Any}
@@ -10,6 +12,8 @@ type Edge <: Container
 
 
 	function Edge(tail::Vertex, head::Vertex, properties::Dict{String,Any})
+		# Construct an edge from a pair of vertices with a set of property values
+
 		e = new()
 		e.id = UUID.v4()
 
@@ -22,6 +26,8 @@ type Edge <: Container
 	end
 
 	function Edge(tail::Vertex, head::Vertex)
+		# Construct an edge from a pair of vertices
+
 		e = Edge(tail, head, Dict{String, Any}())
 
 		return e
@@ -29,6 +35,8 @@ type Edge <: Container
 
 
 	function Edge(typelabel::String, tail::Vertex, head::Vertex, properties::Dict{String,Any}=Dict{String,Any}())
+		# Construct an edge from a typelabel, a pair of vertices, and a set of property values
+
 		e = Edge(tail, head, properties)
 		e.typelabel = typelabel
 
@@ -37,6 +45,8 @@ type Edge <: Container
 end
 
 function edgeforobject(object::Any, tail::Vertex, head::Vertex, properties::Dict{String,Any}=Dict{String,Any}())
+	# Construct an edge for a specified object, and  a pair of vertices with a set of property values
+
 	e = Edge(tail, head, properties)
 	e.containedobject = object
 
@@ -44,6 +54,8 @@ function edgeforobject(object::Any, tail::Vertex, head::Vertex, properties::Dict
 end
 
 function edgeforobject(typelabel::String, object::Any, tail::Vertex, head::Vertex, properties::Dict{String,Any}=Dict{String,Any}())
+	# Construct an edge with a typelabel for a specified object, and  a pair of vertices with a set of property values
+
 	e = Edge(typelabel, tail, head, properties)
 	e.containedobject = object
 

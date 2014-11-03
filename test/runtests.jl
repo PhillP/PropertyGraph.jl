@@ -15,5 +15,4 @@ for t in tests
 end
 
 
-testcount = socialgraphtest()
-testcount
+

@@ -10,7 +10,7 @@ The primary documentation for PropertyGraph.jl is the [wiki](https://github.com/
 
 ## Inspiration
 
-There are various sources of inspiration for this package, including the [Gremlin](https://github.com/tinkerpop/gremlin/wiki) graph traversal language for the JVM.
+There are various sources of inspiration for this package, including the [Gremlin](https://github.com/tinkerpop/gremlin/wiki) graph traversal language for the JVM, the Cypher language used by Neo4j and other query languages.  However, the structure of queries supported by this package makes use of the features and syntax of Julia and varies from those other examples.
 
 ## Querying
 

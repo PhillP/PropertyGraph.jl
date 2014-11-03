@@ -1,4 +1,6 @@
 type Graph <: Container
+	# Represents a Property Graph
+
 	id::UUID.Uuid
 	containedobject::Any
 	attachedproperties::Dict{String,Any}
@@ -7,6 +9,8 @@ type Graph <: Container
 	vertices::Dict{UUID.Uuid,Vertex}
 
 	function Graph(properties::Dict{String,Any}=Dict{String,Any}())
+		# Constructs a Property Graph with a set of property values
+
 		g = new()
 		g.id = UUID.v4()
 
@@ -19,6 +23,8 @@ type Graph <: Container
 	end
 
 	function Graph(object::Any, properties::Dict{String,Any}=Dict{String,Any}())
+		# Construct a Property Graph for a supplied object and with a set of property values
+
 		g = Graph(properties)
 		g.containedobject = object
 
@@ -27,6 +33,8 @@ type Graph <: Container
 end
 
 function add!(g::Graph, v::Vertex)
+	# Add a vertex to the graph
+
 	# test whether the vertex already belongs to another graph
 	if isdefined(v, :graph) && v.graph != g
 		throw(VertexAlreadyBelongsToAnotherGraphException())
@@ -44,6 +52,8 @@ function add!(g::Graph, v::Vertex)
 end
 
 function add!(g::Graph, e::Edge)
+	# Add an Edge to the Graph
+
 	# test whether the edge already belongs to another graph
 	if isdefined(e,:graph) && e.graph != g
 			throw(EdgeAlreadyBelongsToAnotherGraphException())
