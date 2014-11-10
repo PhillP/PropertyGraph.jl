@@ -10,7 +10,7 @@ The primary documentation for PropertyGraph.jl is the [wiki](https://github.com/
 
 ## Inspiration
 
-There are various sources of inspiration for this package, including the [Gremlin](https://github.com/tinkerpop/gremlin/wiki) graph traversal language for the JVM, the Cypher language used by Neo4j and other query languages.  However, the structure of queries supported by this package makes use of the features and syntax of Julia and varies from those other examples.
+There are various sources of inspiration for this package, including the [Gremlin](https://github.com/tinkerpop/gremlin/wiki) graph traversal language for the JVM, the Cypher language used by Neo4j and other query languages.  However, the structure of queries supported by this package make use of features and syntax peculiar to Julia.
 
 ## Querying
 
@@ -43,7 +43,12 @@ The above example and others are explained in the [wiki](https://github.com/Phil
 
 For the moment, Graphs must be held entirely in memory.  This is an area for future development.
 
+## Performance
+The focus of the library has initially been on supporting a useful and convenient query syntax.  There are a number of features that would be required to make this functionality perform well on larger data sets and this will be the subject of future work.
+
 ## Installation
+
+Although PropertyGraph.jl is written to be compatible with both Julia 0.3 and 0.4, it will initially be available for Julia 0.4 only.  There have been errors encountered during testing on v0.3 due to issues that have already been resolved in Julia 0.4.
 
 *Installation through the Package manager is not yet available.  These instructions can not be used until metadata for the package is registered*
 
