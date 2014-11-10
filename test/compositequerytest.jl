@@ -76,6 +76,90 @@ function compositequerytest()
 				 (average, v->get(v, "population"))
 			 )
 	@test ifloor(averageadjacentpopulation) == 3118566
+
+	# get the state capitals whose population is > 10% of their nations population
+	# this query has the following structure
+	#       start with a graph
+	#       select vertices of type "Country"
+	#       store the countries population (so that it will be carried forward with graph traversals for later comparison)
+	#       follow the incoming edges of type IsIn to move to States of each Country
+	#       the tail of each edge is a State
+	#       follow the incoming edges of type IsCaptitalOf
+	#       the tail of these edges are capital cities, filter to only those with a population > 10% of stored country population
+	q = query(g,
+				(vertices, v-> v.typelabel == "Country"),
+			 	(store, v->@compat Dict{String, Any}("countrypopulation"=>get(v,"population",0),"countryname"=>get(v,"name"))),
+			  	(incoming, e->e.typelabel == "IsIn"),
+				tail,
+			  	(incoming, e->e.typelabel == "IsCapitalOf"),
+				(tail, v->get(v,"population",0) > getstored(v,"countrypopulation",0) * 0.10)
+			 )
+	countcities = query(q, count)
+	@test countcities == 2 # in this test, 2 cities are expected
+
+	# select a flat set of results in the form:  cityname, citypopulation, countryname, countrypopulation
+	selectresults = query(q, (select, s->(get(s,"name"),
+								 get(s,"population"),
+								 getstored(s,"countryname"),
+								 getstored(s,"countrypopulation"))))
+
+	@test length(selectresults) == countcities
+
+	# test the data expected was returned
+	sydneymatched = false
+	melbournematched = false
+
+	for r in selectresults
+		if r[1] == "Sydney"
+			sydneymatched = true
+			@test r[1] == "Sydney"
+			@test r[2] == 4667283
+			@test r[3] == "Australia"
+			@test r[4] == 23235800
+		end
+		if r[1] == "Melbourne"
+			melbournematched = true
+			@test r[1] == "Melbourne"
+			@test r[2] == 4246345
+			@test r[3] == "Australia"
+			@test r[4] == 23235800
+		end
+	end
+
+	@test sydneymatched
+	@test melbournematched
+
+	# find the States whose capitals have more than half the State's population
+	# this can be achieved in several ways... however for this stest Store and Move is being targetted for testing
+	# once the cities are identified, movetovertex is used to move back to previously stored State vertices
+	populationquery = query(g,
+				(vertices, v-> v.typelabel == "State"),
+			 	(store, v->@compat Dict{String, Any}("state"=>v.item, "statepopulation"=>get(v, "population"))),
+			  	(incoming, e->e.typelabel == "IsCapitalOf"),
+				(tail, v->get(v,"population",0) > (getstored(v,"statepopulation",0) * 0.5)),
+			  	(movetovertices, v->getstored(v,"state")) # move back to State
+			 )
+
+	sumpopulation = query(populationquery, (sum, v->get(v,"population")))
+	@test sumpopulation == 17931600
+
+	selectpopulation = query(populationquery, (select, s->(get(s,"name"), get(s,"population"))))
+	for r in selectpopulation
+		println("State: ", r[1], " Population: ", r[2])
+	end
+
+	# repeat the tests above, but this time move to edges instead of vertices
+	sumpopulation = query(g,
+				(vertices, v-> v.typelabel == "State"),
+			 	(store, v->@compat Dict{String, Any}("statepopulation"=>get(v, "population"))),
+			  	(incoming, e->e.typelabel == "IsCapitalOf"),
+				(store, e->@compat Dict{String, Any}("capitaledge"=>e.item)),
+			  	(tail, v->get(v,"population",0) > getstored(v,"statepopulation",0) * 0.5),
+			  	(movetoedges, v->getstored(v,"capitaledge")), # move back to State via the stored edge
+			  	head,
+				(sum, v->get(v,"population"))
+			 )
+	@test sumpopulation == 17931600
 end
 
 compositequerytest()

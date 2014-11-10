@@ -27,6 +27,9 @@ function socialgraphtest()
 	# count the Follows edges
 	@test query(graph, (edges, e->e.typelabel == "Follows"), count) == 1783
 
+	# count the vertices where the condition is never met
+	@test query(graph, (vertices, v-> 1 == 2), count) == 0
+
 	# start with the vertices for Germany and France
 	# follow the edges of type "LivesIn" to find all the people within the graph who live in Germany or France
 	#     only edges that have a ForYears property of >= 5 (indicating the person has lived in the associated country for 5 or more years) will be followed

@@ -11,13 +11,17 @@ const OutgoingQueryResultOption = QueryResultOption("OutgoingQueryResultOption")
 const HeadQueryResultOption = QueryResultOption("HeadQueryResultOption")
 const TailQueryResultOption = QueryResultOption("TailQueryResultOption")
 const NoneQueryResultOption = QueryResultOption("NoneQueryResultOption")
+const DistinctResultOption = QueryResultOption("DistinctResultOption")
+const MoveToVerticesResultOption = QueryResultOption("MoveToVerticesResultOption")
+const MoveToEdgesResultOption = QueryResultOption("MoveToEdgesResultOption")
+const StoreResultOption = QueryResultOption("StoreResultOption")
 
 type CompositeQuery
 	# Represents a Query in its entirety, or a portion of a larger Query
 
 	graph::Graph
 	previous::CompositeQuery
-	where::Function
+	associatedfunction::Function
 	inputtype::QueryResultType
 	outputtype::QueryResultType
 	option::QueryResultOption
@@ -39,11 +43,11 @@ type CompositeQuery
 		return cq
 	end
 
-	function CompositeQuery(g::Graph, outputtype::QueryResultType, option::QueryResultOption, where::Function)
+	function CompositeQuery(g::Graph, outputtype::QueryResultType, option::QueryResultOption, associatedfunction::Function)
 		# Constructs a CompositeQuery for the specified Graph with a specified where filter
 
 		cq = CompositeQuery(g, outputtype, option)
-		cq.where = where
+		cq.associatedfunction = associatedfunction
 
 		return cq
 	end
@@ -61,11 +65,11 @@ type CompositeQuery
 		return cq
 	end
 
-	function CompositeQuery(previous::CompositeQuery, outputtype::QueryResultType, option::QueryResultOption, where::Function)
+	function CompositeQuery(previous::CompositeQuery, outputtype::QueryResultType, option::QueryResultOption, associatedfunction::Function)
 		# Constructs a CompositeQuery which extends a previous query and has an initial where filter function
 
 		cq = CompositeQuery(previous, outputtype, option)
-		cq.where = where
+		cq.associatedfunction = associatedfunction
 
 		return cq
 	end
@@ -140,6 +144,43 @@ function tail(cq::CompositeQuery, where::Function)
 	# Operation that selects the Vertices at the tail of the edges resulting from the supplied query that match the supplied where function.  A CompositeQuery which extends the previous query to include this operation is returned.
 
 	return CompositeQuery(cq, VertexSetQueryResult, TailQueryResultOption, where)
+end
+
+function distinct(cq::CompositeQuery)
+	# Operation that filters the current set of results to a distinct set
+	return CompositeQuery(cq, cq.outputtype, DistinctResultOption)
+end
+
+function store(cq::CompositeQuery, select::Function)
+	# Operation that stores data to be carried forward in the query
+	return CompositeQuery(cq, cq.outputtype, StoreResultOption, select)
+end
+
+function movetoedges(cq::CompositeQuery, select::Function)
+	# Operation that moves to a previously stored set of edges
+	return CompositeQuery(cq, EdgeSetQueryResult, MoveToEdgesResultOption, select)
+end
+
+function movetovertices(cq::CompositeQuery, select::Function)
+	# Operation that moves to a previously stored set of edges
+	return CompositeQuery(cq, VertexSetQueryResult, MoveToVerticesResultOption, select)
+end
+
+function select(cq::CompositeQuery, select::Function)
+	# executes the query and returns a set of mapped results
+	if !cq.isrealised
+		realise!(cq)
+	end
+
+	results = Set{Any}()
+
+	if isspecified(cq.result)
+		for r in cq.result
+			push!(results, select(r))
+		end
+	end
+
+	return results
 end
 
 function reduce(reducer::Function, cq::CompositeQuery, mapper::Function)
@@ -238,7 +279,7 @@ function isspecified(value::Any)
 	return value != UnspecifiedValue
 end
 
-function distinct(cq::CompositeQuery)
+function getdistinctresults(cq)
 	# An operation that selects the distinct set of Vertices or Edges resulting from the previous query.  A new CompositeQuery is constructed which includes the distinct operation.
 	if !cq.isrealised
 		realise!(cq)
@@ -249,15 +290,19 @@ function distinct(cq::CompositeQuery)
 	end
 
 	# the implementation of this method based on the implementation of unique in base library
-	distinctset = Set{eltype(cq.result)}()
+	distinctset = Set{Container}()
+	newresults = Set{CompositeQueryResultItem}()
 
-	for r in cq.result
-		if !in(r, distinctset)
-			push!(distinctset, r)
+	if isspecified(cq.result)
+		for r in cq.result
+			if !in(r.item, distinctset)
+				push!(distinctset, r.item)
+				push!(newresults, CompositeQueryResultItem(r.item, r))
+			end
 		end
 	end
 
-	return cq
+	return newresults
 end
 
 function realise!(cq::CompositeQuery)
@@ -269,26 +314,26 @@ function realise!(cq::CompositeQuery)
 			realise!(cq.previous)
 		end
 
-		result = Set{Edge}()
+		result = Set{CompositeQueryResultItem}()
 
-		if cq.outputtype == EdgeSetQueryResult
-			result = Set{Edge}()
-		elseif cq.outputtype == VertexSetQueryResult
-			result = Set{Vertex}()
-		else
+		if cq.outputtype != EdgeSetQueryResult && cq.outputtype != VertexSetQueryResult
 			# throw
 			throw(InvalidOutputQueryResultTypeException())
 		end
 
-		source = Set{Edge}()
+		source = Set{CompositeQueryResultItem}()
 
 		if cq.inputtype == InitialQueryResult
+			items = Set{Container}()
 			if cq.outputtype == EdgeSetQueryResult
-				source = values(cq.graph.edges)
+				items = values(cq.graph.edges)
 			elseif cq.outputtype == VertexSetQueryResult
-				source = values(cq.graph.vertices)
+				items = values(cq.graph.vertices)
 			else
 				throw(InvalidInputQueryResultTypeException())
+			end
+			for i in items
+				push!(source, CompositeQueryResultItem(i))
 			end
 		else
 			if !isdefined(cq, :previous)
@@ -304,48 +349,88 @@ function realise!(cq::CompositeQuery)
 			source = cq.previous.result
 		end
 
-		# default the getitem function to returning the item given
-		getitem = r -> r
-		getitemsubset = UnspecifiedValue
+		if cq.option == StoreResultOption
+			for r in source
+				newresultitem = CompositeQueryResultItem(r.item, r)
+				push!(result, newresultitem)
 
-		if cq.inputtype == cq.outputtype || cq.inputtype == InitialQueryResult
-			# nothing to do
-		elseif cq.inputtype == EdgeSetQueryResult && cq.outputtype == VertexSetQueryResult
-			if cq.option == HeadQueryResultOption
-				getitem = (r -> r.head)
-			elseif cq.option == TailQueryResultOption
-				getitem = (r -> r.tail)
-			else
-				# throw
-				throw(InvalidQueryOptionOutputTypeCombinationException())
+				values = cq.associatedfunction(newresultitem)
+				if isspecified(values)
+					merge!(newresultitem.storedvalues, values)
+				end
 			end
-		elseif cq.inputtype == VertexSetQueryResult && cq.outputtype == EdgeSetQueryResult
-			if cq.option == IncomingQueryResultOption
-				getitemsubset = (r->r.incomingedges)
-			elseif cq.option == OutgoingQueryResultOption
-				getitemsubset = (r->r.outgoingedges)
-			else
-				# throw
-				throw(InvalidQueryOptionOutputTypeCombinationException())
-			end
-		else
-			#throw
-			throw(InvalidInputOutputQueryOptionCombinationException())
-		end
-
-		for r in source
-			item = getitem(r)
-
-			if getitemsubset != UnspecifiedValue
-				subset = getitemsubset(item)
-				for si in subset
-					if doesitemmatchquery(si, cq)
-						push!(result, si)
+		elseif cq.option == MoveToVerticesResultOption
+			for r in source
+				item = cq.associatedfunction(r)
+				if isspecified(item)
+					if isa(item,Vertex)
+						newresultitem = CompositeQueryResultItem(item, r)
+						push!(result, newresultitem)
+					else
+						throw(UnexpectedTypeOnMoveToVertices())
 					end
 				end
+			end
+		elseif cq.option == MoveToEdgesResultOption
+			for r in source
+				item = cq.associatedfunction(r)
+				if isspecified(item)
+					if isa(item,Edge)
+						newresultitem = CompositeQueryResultItem(item, r)
+						push!(result, newresultitem)
+					else
+						throw(UnexpectedTypeOnMoveToEdges())
+					end
+				end
+			end
+		elseif cq.option == DistinctResultOption
+			result = getdistinctresults(cq.previous)
+		else
+			# default the getitem function to returning the item given
+			getitem = r -> r.item
+			getitemsubset = UnspecifiedValue
+
+			if cq.inputtype == cq.outputtype || cq.inputtype == InitialQueryResult
+				# nothing to do
+			elseif cq.inputtype == EdgeSetQueryResult && cq.outputtype == VertexSetQueryResult
+				if cq.option == HeadQueryResultOption
+					getitem = (r -> r.item.head)
+				elseif cq.option == TailQueryResultOption
+					getitem = (r -> r.item.tail)
+				else
+					# throw
+					throw(InvalidQueryOptionOutputTypeCombinationException())
+				end
+			elseif cq.inputtype == VertexSetQueryResult && cq.outputtype == EdgeSetQueryResult
+				if cq.option == IncomingQueryResultOption
+					getitemsubset = (r->r.incomingedges)
+				elseif cq.option == OutgoingQueryResultOption
+					getitemsubset = (r->r.outgoingedges)
+				else
+					# throw
+					throw(InvalidQueryOptionOutputTypeCombinationException())
+				end
 			else
-				if doesitemmatchquery(item, cq)
-					push!(result, item)
+				#throw
+				throw(InvalidInputOutputQueryOptionCombinationException())
+			end
+
+			for r in source
+				item = getitem(r)
+
+				if getitemsubset != UnspecifiedValue
+					subset = getitemsubset(item)
+					for si in subset
+						cqi = CompositeQueryResultItem(si, r)
+						if doesitemmatchquery(cqi, cq)
+							push!(result, cqi)
+						end
+					end
+				else
+					cqi = CompositeQueryResultItem(item, r)
+					if doesitemmatchquery(cqi, cq)
+						push!(result, cqi)
+					end
 				end
 			end
 		end
@@ -355,12 +440,12 @@ function realise!(cq::CompositeQuery)
 	end
 end
 
-function doesitemmatchquery(item::Container, cq::CompositeQuery)
-	# test whether an item (Vertex or Edge) matches the conditions for inclusion in a query
+function doesitemmatchquery(resultitem::CompositeQueryResultItem, cq::CompositeQuery)
+	# test whether a CompositeQueryResultItem matches the conditions for inclusion in a query
 	match = true
 
-	if isdefined(cq, :where)
-		match = cq.where(item)
+	if isdefined(cq, :associatedfunction)
+		match = cq.associatedfunction(resultitem)
 	end
 
 	return match

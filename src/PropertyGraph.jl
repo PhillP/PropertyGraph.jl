@@ -3,7 +3,7 @@ module PropertyGraph
 using UUID
 
 # type exports
-export Graph, Vertex, Edge, Container, CompositeQuery
+export Graph, Vertex, Edge, Container, CompositeQuery, CompositeQueryResultItem
 export edgeforobject, vertexforobject
 # Exceptions.jl exports
 export VertexAlreadyBelongsToAnotherGraphException, EdgeAlreadyBelongsToAnotherGraphException
@@ -13,6 +13,7 @@ export InvalidQueryOptionOutputTypeCombinationException, InvalidInputQueryResult
 export InvalidOutputQueryResultTypeException, MissingPreviousQueryContextException
 export MissingPreviousQueryContextResultException, InvalidQueryOptionOutputTypeCombinationException
 export InvalidInputOutputQueryOptionCombinationException, CompositeQueryResultNotRealisedException
+export UnexpectedTypeOnMoveToVertices, UnexpectedTypeOnMoveToEdges
 # Container.jl exports
 export setpropertyvalue!, setpropertyvalues!,get, UnspecifiedValue
 # Vertex.jl exports
@@ -22,7 +23,8 @@ export add!
 # CompositeQuery.jl exports
 export InitialQueryResult, VertexSetQueryResult, EdgeSetQueryResult
 export vertices, edges, outgoing, incoming, head, tail
-export reduce, sum, maximum, minimum, average, count
+export reduce, sum, maximum, minimum, average, count, select
+export movetovertices, movetoedges, store, getstored
 export distinct, realise!
 export QuerySource, QueryOperation, query
 
@@ -31,6 +33,7 @@ include("container.jl")
 include("vertex.jl")
 include("edge.jl")
 include("graph.jl")
+include("compositequeryresultitem.jl")
 include("compositequery.jl")
 
 end # module

@@ -20,6 +20,8 @@ type Vertex <: Container
 		v.id = UUID.v4()
 
 		v.attachedproperties = properties
+		v.containedobject = UnspecifiedValue
+		v.typelabel = "Unspecified"
 
 		v.incomingedges = Set{Container}()
 		v.outgoingedges = Set{Container}()
