@@ -50,11 +50,9 @@ The focus of the library has initially been on supporting a useful and convenien
 
 Although PropertyGraph.jl is written to be compatible with both Julia 0.3 and 0.4, it will initially be available for Julia 0.4 only.  There have been errors encountered during testing on v0.3 due to issues that have already been resolved in Julia 0.4.
 
-*Installation through the Package manager is not yet available.  These instructions can not be used until metadata for the package is registered*
-
 Install PropertyGraph.jl with:
 ```
-Not yet available: Pkg.add("PropertyGraph")
+Pkg.add("PropertyGraph")
 ```
 
 If PropertyGraph.jl is not recognised you may first need to update your package metadata with:
