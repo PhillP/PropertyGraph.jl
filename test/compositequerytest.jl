@@ -160,6 +160,39 @@ function compositequerytest()
 				(sum, v->get(v,"population"))
 			 )
 	@test sumpopulation == 17931600
+
+	# sum populations, grouped by state or territory type
+	groupedsum = query(g,
+					   (vertices, v-> v.typelabel == "State" || v.typelabel == "Territory"),
+					   (group, v-> v.typelabel),
+					   (sum, v->get(v,"population")),
+					   )
+	# test grouped sum
+	@test groupedsum["Territory"] == 624700
+
+	# sum populations of capitals of states or territories, grouped by state or territory type
+	groupedsum = query(g,
+					   (vertices, v-> v.typelabel == "State" || v.typelabel == "Territory"),
+					   (group, v-> v.typelabel),
+					   (incoming, e->e.typelabel == "IsCapitalOf"),
+					   tail,
+					   (sum, v->get(v,"population"))
+					   )
+	@test groupedsum["Territory"] == 514578
+
+	# multi-level group
+	# sum the population of adjacent states for each state by adjacency direction
+	groupedsum = query(g,
+					   (vertices, v-> v.typelabel == "State" || v.typelabel == "Territory"),
+					   (group, v-> get(v,"name")),
+					   (outgoing, e->e.typelabel == "IsAdjacent"),
+					   (group, e-> get(e,"direction","none")),
+					   head,
+					   (sum, v->get(v,"population"))
+					   )
+
+	# test the sum of populations of States directly West of Queensland
+	@test groupedsum["Queensland"]["West"] == 1916500
 end
 
 compositequerytest()

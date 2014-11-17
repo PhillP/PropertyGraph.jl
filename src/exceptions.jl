@@ -24,3 +24,7 @@ type MissingPreviousQueryContextResultException <: Exception end
 type InvalidQueryOptionOutputTypeCombinationException <: Exception end
 type InvalidInputOutputQueryOptionCombinationException <: Exception end
 type CompositeQueryResultNotRealisedException <: Exception end
+
+type UnexpectedTypeOnMoveToVertices <: Exception end
+type UnexpectedTypeOnMoveToEdges <: Exception end
+

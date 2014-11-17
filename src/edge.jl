@@ -16,7 +16,8 @@ type Edge <: Container
 
 		e = new()
 		e.id = UUID.v4()
-
+		e.containedobject = UnspecifiedValue
+		e.typelabel = "Unspecified"
 		e.tail = tail
 		e.head = head
 

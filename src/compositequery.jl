@@ -28,6 +28,7 @@ type CompositeQuery
 	depth::Integer
 	result::Any
 	isrealised::Bool
+	isgrouped::Bool
 
 	function CompositeQuery(g::Graph, outputtype::QueryResultType, option::QueryResultOption)
 		# Constructs a CompositeQuery for the specified Graph
@@ -39,6 +40,8 @@ type CompositeQuery
 		cq.option = option
 		cq.depth = 1
 		cq.isrealised = false
+		cq.isgrouped = false
+		cq.result = Set{CompositeQueryResultItem}()
 
 		return cq
 	end
@@ -273,6 +276,37 @@ function average(cq::CompositeQuery, map::Function)
 	return result
 end
 
+function group(cq::CompositeQuery, groupby::Function)
+	# groups the results of a composite query
+	if !cq.isrealised
+		realise!(cq)
+	end
+
+	if !isdefined(cq, :result)
+		throw (CompositeQueryResultNotRealisedException())
+	end
+
+	groupedresult = Dict{Any, CompositeQuery}()
+
+	if isspecified(cq.result)
+		for r in cq.result
+			key = groupby(r)
+
+			groupset = Base.get(groupedresult, key, UnspecifiedValue)
+
+			if groupset == UnspecifiedValue
+				groupset = CompositeQuery(cq, cq.outputtype, NoneQueryResultOption, groupby)
+				groupedresult[key] = groupset
+				groupset.isrealised = true
+			end
+
+			push!(groupset.result, r)
+		end
+	end
+
+	return groupedresult
+end
+
 function isspecified(value::Any)
 	# Tests whether a value is specified (whether it matches the UnspecifiedValue)
 
@@ -314,8 +348,6 @@ function realise!(cq::CompositeQuery)
 			realise!(cq.previous)
 		end
 
-		result = Set{CompositeQueryResultItem}()
-
 		if cq.outputtype != EdgeSetQueryResult && cq.outputtype != VertexSetQueryResult
 			# throw
 			throw(InvalidOutputQueryResultTypeException())
@@ -352,7 +384,7 @@ function realise!(cq::CompositeQuery)
 		if cq.option == StoreResultOption
 			for r in source
 				newresultitem = CompositeQueryResultItem(r.item, r)
-				push!(result, newresultitem)
+				push!(cq.result, newresultitem)
 
 				values = cq.associatedfunction(newresultitem)
 				if isspecified(values)
@@ -365,7 +397,7 @@ function realise!(cq::CompositeQuery)
 				if isspecified(item)
 					if isa(item,Vertex)
 						newresultitem = CompositeQueryResultItem(item, r)
-						push!(result, newresultitem)
+						push!(cq.result, newresultitem)
 					else
 						throw(UnexpectedTypeOnMoveToVertices())
 					end
@@ -377,14 +409,14 @@ function realise!(cq::CompositeQuery)
 				if isspecified(item)
 					if isa(item,Edge)
 						newresultitem = CompositeQueryResultItem(item, r)
-						push!(result, newresultitem)
+						push!(cq.result, newresultitem)
 					else
 						throw(UnexpectedTypeOnMoveToEdges())
 					end
 				end
 			end
 		elseif cq.option == DistinctResultOption
-			result = getdistinctresults(cq.previous)
+			cq.result = getdistinctresults(cq.previous)
 		else
 			# default the getitem function to returning the item given
 			getitem = r -> r.item
@@ -423,19 +455,18 @@ function realise!(cq::CompositeQuery)
 					for si in subset
 						cqi = CompositeQueryResultItem(si, r)
 						if doesitemmatchquery(cqi, cq)
-							push!(result, cqi)
+							push!(cq.result, cqi)
 						end
 					end
 				else
 					cqi = CompositeQueryResultItem(item, r)
 					if doesitemmatchquery(cqi, cq)
-						push!(result, cqi)
+						push!(cq.result, cqi)
 					end
 				end
 			end
 		end
 
-		cq.result = result
 		cq.isrealised = true
 	end
 end
@@ -452,7 +483,7 @@ function doesitemmatchquery(resultitem::CompositeQueryResultItem, cq::CompositeQ
 end
 
 # A union of the types that may be used as a source of queries
-QuerySource = Union(Graph,CompositeQuery)
+QuerySource = Union(Graph,CompositeQuery,Dict{Any,CompositeQuery})
 
 # A union of the types that may be used as operations of a query
 QueryOperation = Union(Function,(Function, Function))
@@ -461,14 +492,35 @@ function query(source::QuerySource,operations::QueryOperation...)
 	# Builds a query from a source and series of operations
 
 	current = source
+	isgrouped = false
+	operationindex = 1
 
 	for operation in operations
+		if isa(current, Dict{Any,CompositeQuery})
+			isgrouped = true
+			break
+		end
+
 		if isa(operation,Function)
 			current = operation(current)
 		elseif isa(operation, (Function,Function))
 			current = operation[1](current, operation[2])
 		end
+
+		operationindex = operationindex + 1
 	end
 
-	return current
+	if isgrouped && length(operations) >= operationindex
+		remainingoperations = operations[operationindex:length(operations)]
+
+		groupedresult = Dict{Any, Any}()
+
+		for (k,v) in current
+			push!(groupedresult, k, query(v, remainingoperations...))
+		end
+
+		return groupedresult
+	else
+		return current
+	end
 end

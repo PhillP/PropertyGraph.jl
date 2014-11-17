@@ -23,7 +23,7 @@ export add!
 # CompositeQuery.jl exports
 export InitialQueryResult, VertexSetQueryResult, EdgeSetQueryResult
 export vertices, edges, outgoing, incoming, head, tail
-export reduce, sum, maximum, minimum, average, count, select
+export reduce, sum, maximum, minimum, average, count, select, group
 export movetovertices, movetoedges, store, getstored
 export distinct, realise!
 export QuerySource, QueryOperation, query
