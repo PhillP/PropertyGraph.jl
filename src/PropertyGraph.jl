@@ -25,7 +25,8 @@ export InitialQueryResult, VertexSetQueryResult, EdgeSetQueryResult
 export vertices, edges, outgoing, incoming, head, tail
 export reduce, sum, maximum, minimum, average, count, select, group
 export movetovertices, movetoedges, store, getstored
-export distinct, realise!
+export distinct, realise!, merge, mergedistinct, filter, loop, newonly
+export previousresultcount, resultcount
 export QuerySource, QueryOperation, query
 
 include("exceptions.jl")

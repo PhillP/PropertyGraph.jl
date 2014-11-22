@@ -29,6 +29,8 @@ type CompositeQuery
 	result::Any
 	isrealised::Bool
 	isgrouped::Bool
+	repeatcount::Integer
+	operationstepback::Integer
 
 	function CompositeQuery(g::Graph, outputtype::QueryResultType, option::QueryResultOption)
 		# Constructs a CompositeQuery for the specified Graph
@@ -42,6 +44,8 @@ type CompositeQuery
 		cq.isrealised = false
 		cq.isgrouped = false
 		cq.result = Set{CompositeQueryResultItem}()
+		cq.repeatcount = 0
+		cq.operationstepback = 0
 
 		return cq
 	end
@@ -64,6 +68,7 @@ type CompositeQuery
 		cq.outputtype = outputtype
 		cq.option = option
 		cq.depth = previous.depth + 1
+		cq.repeatcount = previous.repeatcount
 
 		return cq
 	end
@@ -339,6 +344,142 @@ function getdistinctresults(cq)
 	return newresults
 end
 
+function loop(cq::CompositeQuery, stepfunction::Function)
+	realise!(cq)
+
+	newresults = Set{CompositeQueryResultItem}()
+
+	if isspecified(cq.result)
+		for r in cq.result
+			newitem = CompositeQueryResultItem(r.item, r)
+			# copy forward the isnew flag on repeat
+			newitem.isnew = r.isnew
+			push!(newresults, newitem)
+		end
+	end
+
+	cqnew = CompositeQuery(cq, cq.outputtype, NoneQueryResultOption)
+	cqnew.operationstepback = stepfunction(cqnew)
+	cqnew.result = newresults
+	cqnew.isrealised = true
+
+	if cqnew.operationstepback > 0
+		cqnew.repeatcount = cqnew.repeatcount + 1
+	else
+		cqnew.repeatcount = 0
+	end
+
+	return cqnew
+end
+
+function mergedistinct(cq::CompositeQuery, stepfunction::Function)
+	return merge(cq, stepfunction, true)
+end
+
+function merge(cq::CompositeQuery, stepfunction::Function)
+	return merge(cq, stepfunction, false)
+end
+
+function merge(cq::CompositeQuery, stepfunction::Function, distinct::Bool)
+	realise!(cq)
+
+	stepcount = stepfunction(cq)
+
+	distinctset = Set{Container}()
+	newresults = Set{CompositeQueryResultItem}()
+	cqnew = CompositeQuery(cq, cq.outputtype, NoneQueryResultOption)
+
+	if stepcount > 0
+		source = cqnew
+		stepped = 0
+		for i in 1:stepcount
+			if isdefined(source, :previous)
+				source = source.previous
+				stepped = stepped + 1
+			else
+				# throw
+				throw(InvalidStepCountForMergeException())
+			end
+		end
+
+		if isspecified(source.result)
+			for r in source.result
+				add = !distinct
+				if distinct
+					if !in(r.item, distinctset)
+						push!(distinctset, r.item)
+						add = true
+					end
+				end
+
+				if add
+					mergeitem = CompositeQueryResultItem(r.item, r)
+					mergeitem.isnew = false
+					push!(newresults, mergeitem)
+				end
+			end
+		end
+	end
+
+	if isspecified(cq.result)
+		for r in cq.result
+			add = !distinct
+			if distinct
+				if !in(r.item, distinctset)
+					push!(distinctset, r.item)
+					add = true
+				end
+			end
+
+			if add
+				newitem = CompositeQueryResultItem(r.item, r)
+				push!(newresults, newitem)
+			end
+		end
+	end
+
+	cqnew.result = newresults
+	cqnew.isrealised = true
+
+	return cqnew
+end
+
+function filter(cq::CompositeQuery, filterfunction::Function)
+	# Operation that filters results without traversing
+	return CompositeQuery(cq, cq.outputtype, NoneQueryResultOption, filterfunction)
+end
+
+function newonly(cq::CompositeQuery)
+	# Operation that filters results without traversing
+	return filter(cq, i->i.isnew)
+end
+
+function resultcount(cq::CompositeQuery)
+	realise!(cq)
+
+	return length(cq.result)
+end
+
+function previousresultcount(cq::CompositeQuery, steps::Integer)
+	source = cq
+	stepped = 0
+	for i in 1:steps
+		if isdefined(source, :previous)
+			source = source.previous
+			stepped = stepped + 1
+		else
+			# throw
+			throw(InvalidStepCountForResultCountException())
+		end
+	end
+	realise!(source)
+	return length(source.result)
+end
+
+# need methods
+#   mergedistinct
+#   latestmergecount
+
 function realise!(cq::CompositeQuery)
 	# realise each part of the composite query in turn
 	# there is alot of scope for optimisation here to combine parts of the composite query
@@ -495,19 +636,25 @@ function query(source::QuerySource,operations::QueryOperation...)
 	isgrouped = false
 	operationindex = 1
 
-	for operation in operations
+	while operationindex <= length(operations) && !isgrouped
+		operation = operations[operationindex]
+
+		# if this is a group operation break out
 		if isa(current, Dict{Any,CompositeQuery})
 			isgrouped = true
-			break
-		end
+		else
+			if isa(operation,Function)
+				current = operation(current)
+			elseif isa(operation, (Function,Function))
+				current = operation[1](current, operation[2])
+			end
 
-		if isa(operation,Function)
-			current = operation(current)
-		elseif isa(operation, (Function,Function))
-			current = operation[1](current, operation[2])
+			if isa(current, CompositeQuery) && current.operationstepback > 0
+				operationindex = operationindex - current.operationstepback
+			else
+				operationindex = operationindex + 1
+			end
 		end
-
-		operationindex = operationindex + 1
 	end
 
 	if isgrouped && length(operations) >= operationindex

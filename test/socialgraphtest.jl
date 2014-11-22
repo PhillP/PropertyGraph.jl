@@ -3,6 +3,23 @@ using Base.Test
 using PropertyGraph
 using UUID
 
+function getnetworksize(graph::Graph, name::String, searchsteps::Integer)
+	# start with a specific person...
+	# the repeatedly follow the Follows links for searchsteps + 1 traversals (or until there are no more traversals to follow)
+	network = query(graph,
+					(vertices, v->v.typelabel == "Person" && get(v,"Name") == name),
+					newonly, # only process the newly included results (relevant when looping)
+					(outgoing, e->e.typelabel == "Follows"), # follow the outgoing Follows links
+					head, # the head of these edges is someone being followed
+					(mergedistinct,q -> 4), # merge these new results into the results we had at the last loop 4 steps back
+					(loop,q-> if q.repeatcount < searchsteps && resultcount(q) > previousresultcount(q, 5) 4 else 0 end) # if we have found new people, loop back and repeat
+					)
+	# check the expected network size
+	networksize = query(network, count)
+
+	return networksize
+end
+
 function socialgraphtest()
 	graph = buildsocialtestgraph()
 
@@ -53,5 +70,23 @@ function socialgraphtest()
 	# get a count of the results
 	testcount = query(part2, count)
 	@test testcount == 78
+
+	# check the expected network size based on Follows links of a person
+	# test first just the link of this person
+	searchsteps = 0
+	networksize = getnetworksize(graph,"Ronny Lamonica", searchsteps)
+	@test networksize == 10
+
+	# now test incuding people followed by people Ronny follows
+	searchsteps = 1
+	networksize = getnetworksize(graph,"Ronny Lamonica", searchsteps)
+	@test networksize == 71
+
+	# keep going
+	for searchsteps in 2:5
+		networksize = getnetworksize(graph,"Ronny Lamonica", searchsteps)
+		println("Network size: ", networksize, " Search Steps: ", searchsteps)
+	end
 end
+
 @time socialgraphtest()

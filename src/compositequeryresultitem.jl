@@ -7,6 +7,7 @@ type CompositeQueryResultItem
 	hassource::Bool
 	sourceresultitem::CompositeQueryResultItem
 	storedvalues::Dict{String, Any}
+	isnew::Bool
 
 	function CompositeQueryResultItem(newitem::Container, source::CompositeQueryResultItem)
 		# Constructs a ResultItem given an item (Vertex or Edge) and a previous result
@@ -21,6 +22,7 @@ type CompositeQueryResultItem
 		r.hassource = true
 		r.sourceresultitem = source
 		r.storedvalues = copy(source.storedvalues)
+		r.isnew = true
 
 		return r
 	end
@@ -35,6 +37,7 @@ type CompositeQueryResultItem
 		r.containedobject = UnspecifiedValue
 		r.hassource = false
 		r.storedvalues = Dict{String,Any}()
+		r.isnew = true
 
 		return r
 	end

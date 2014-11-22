@@ -4,7 +4,8 @@ tests =["testdata",
 		"testdatasocial",
 		"populategraphtest",
         "compositequerytest",
-		"socialgraphtest"]
+		"socialgraphtest"
+		]
 
 println("Running tests:")
 
@@ -13,6 +14,4 @@ for t in tests
     println("running $(testfilepath) ...")
     include(testfilepath)
 end
-
-
 
