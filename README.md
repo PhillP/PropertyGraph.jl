@@ -21,7 +21,7 @@ Querying in PropertyGraph.jl is performed by:
 A query, or portions of a query can be reused to avoid repeat processing of the common traversals.
 
 The simplest way of building a query is  to use the query varargs method.  This method allows queries to be written as a list of operations in a simple DSL as per the following example.
-```
+```julia
 averagepopulaton = query(graph,
 			  (vertices, v-> get(v,"name") == "Queensland" || get(v,"name") == "Victoria"),
 			  (outgoing, e->e.typelabel == "IsAdjacent"),
@@ -30,7 +30,7 @@ averagepopulaton = query(graph,
 			  (average, v->get(v, "population") # average the value of population property
 			 )
 
-The query above contains the following steps:
+# The query above contains the following steps:
 	# start with a graph
 	# select the vertices that match some condition
 	# follow the outgoing edges from these vertices where the edges are of type IsAdjacent
@@ -51,12 +51,12 @@ The focus of the library has initially been on supporting a useful and convenien
 Although PropertyGraph.jl is written to be compatible with both Julia 0.3 and 0.4, it will initially be available for Julia 0.4 only.  There have been errors encountered during testing on v0.3 due to issues that have already been resolved in Julia 0.4.
 
 Install PropertyGraph.jl with:
-```
+```julia
 Pkg.add("PropertyGraph")
 ```
 
 If PropertyGraph.jl is not recognised you may first need to update your package metadata with:
-```
+```julia
 Pkg.update()
 ```
 
