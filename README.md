@@ -43,6 +43,9 @@ The above example and others are explained in the [wiki](https://github.com/Phil
 
 For the moment, Graphs must be held entirely in memory.  This is an area for future development.
 
+## Persistence
+This library will provide hooks and extension points to support persistence of graphs and the loading of portions of a graph on-demand.  The wiki describes how change tracking is implemented.  A store of changes is provided and can be used by persistence functionality to determine which vertices and edges have change and need to be persisted or removed.
+
 ## Performance
 The focus of the library has initially been on supporting a useful and convenient query syntax.  There are a number of features that would be required to make this functionality perform well on larger data sets and this will be the subject of future work.
 
