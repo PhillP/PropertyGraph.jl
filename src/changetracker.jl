@@ -74,7 +74,7 @@ function trackremove(ct::ChangeTracker, e::Edge)
 	ct.ischanged = true
 end
 
-function clearchanges(ct::ChangeTracker, c::Container)
+function clearchanges(ct::ChangeTracker)
 	ct.newedges = Dict{UUID.Uuid,Edge}()
 	ct.newvertices = Dict{UUID.Uuid,Vertex}()
 
