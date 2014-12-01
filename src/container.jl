@@ -8,14 +8,50 @@ const UnspecifiedValue = Unspecified()
 function setpropertyvalue!(c::Container, propertykey::String, value::Any)
 	# set a single property value on the supplied container
 	c.attachedproperties[propertykey] = value
+	trackchange(c)
 end
 
 function setpropertyvalues!(c::Container, properties::Dict{String, Any} )
 	# set multiple property values on the supplied container based on a supplied property dictionary
 	merge!(c.attachedproperties, properties)
+	trackchange(c)
 end
 
 function get(c::Container, name::String, default::Any=UnspecifiedValue)
 	# get the value of a specified property, returning a default value if there is no other property value associated
 	return Base.get(c.attachedproperties,name,default)
+end
+
+function gettracker(c::Container)
+	associatedtracker = UnspecifiedValue
+
+	if isdefined(c, :graph)
+		associatedtracker = gettracker(c.graph)
+	end
+
+	return associatedtracker
+end
+
+function trackchange(c::Container)
+	associatedtracker = gettracker(c)
+
+	if associatedtracker != UnspecifiedValue
+		trackchange!(tracker,c)
+	end
+end
+
+function trackadd(c::Container)
+	associatedtracker = gettracker(c)
+
+	if associatedtracker != UnspecifiedValue
+		trackadd!(tracker,c)
+	end
+end
+
+function trackdelete(c::Container)
+	associatedtracker = gettracker(c)
+
+	if associatedtracker != UnspecifiedValue
+		trackdelete!(tracker,c)
+	end
 end

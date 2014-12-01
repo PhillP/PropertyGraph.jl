@@ -4,7 +4,8 @@ tests =["testdata",
 		"testdatasocial",
 		"populategraphtest",
         "compositequerytest",
-		"socialgraphtest"
+		"socialgraphtest",
+		"changetrackertest"
 		]
 
 println("Running tests:")

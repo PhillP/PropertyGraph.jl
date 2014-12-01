@@ -8,6 +8,13 @@ type Graph <: Container
 	edges::Dict{UUID.Uuid,Edge}
 	vertices::Dict{UUID.Uuid,Vertex}
 
+	loader::GraphLoader
+
+	# tracker defined ::Any instead of ::ChangeTracker
+	# in order to avoid mutually circular type declaration
+	# see: https://github.com/JuliaLang/julia/issues/269
+	tracker::Any
+
 	function Graph(properties::Dict{String,Any}=Dict{String,Any}())
 		# Constructs a Property Graph with a set of property values
 
@@ -18,6 +25,8 @@ type Graph <: Container
 
 		g.edges = Dict{UUID.Uuid,Edge}()
 		g.vertices = Dict{UUID.Uuid,Vertex}()
+
+		# leave loader and tracker unspecified by default
 
 		return g
 	end
@@ -46,9 +55,59 @@ function add!(g::Graph, v::Vertex)
 	end
 
 	v.graph = g
+	trackadd(v)
 	g.vertices[v.id] = v
 
 	return v
+end
+
+
+function remove!(g::Graph, e::Edge)
+	belongstograph = false
+
+	# test whether the edge belongs to this graph
+	if isdefined(e,:graph) && e.graph == g
+		belongstograph = true
+	end
+
+	if !belongstograph
+		throw(EdgeDoesNotBelongToGraphException())
+	end
+
+	trackremove(e)
+	delete!(g.edges, e.id)
+	delete!(e.tail.outgoingedges, e)
+	delete!(e.head.incomingedges, e)
+end
+
+function remove!(g::Graph, v::Vertex)
+	belongstograph = false
+
+	# test whether the edge belongs to this graph
+	if isdefined(v,:graph) && v.graph == g
+		belongstograph = true
+	end
+
+	if !belongstograph
+		throw(VertexDoesNotBelongToGraphException())
+	end
+
+	edgestoremove = Set{Edge}()
+
+	for e in v.incomingedges
+		push!(edgestoremove, e)
+	end
+
+	for e in v.outgoingedges
+		push!(edgestoremove, e)
+	end
+
+	for e in edgestoremove
+		remove!(g, e)
+	end
+
+	trackremove(v)
+	delete!(g.vertices, v)
 end
 
 function add!(g::Graph, e::Edge)
@@ -56,7 +115,7 @@ function add!(g::Graph, e::Edge)
 
 	# test whether the edge already belongs to another graph
 	if isdefined(e,:graph) && e.graph != g
-			throw(EdgeAlreadyBelongsToAnotherGraphException())
+		throw(EdgeAlreadyBelongsToAnotherGraphException())
 	end
 
 	# test whether the edge already belongs to this graph
@@ -75,9 +134,20 @@ function add!(g::Graph, e::Edge)
 	end
 
 	e.graph = g
+	trackadd(e)
 	g.edges[e.id] = e
 	push!(e.head.incomingedges,e)
 	push!(e.tail.outgoingedges,e)
 
 	return e
+end
+
+function gettracker(g::Graph)
+	associatedtracker = UnspecifiedValue
+
+	if isdefined(g, :tracker)
+		associatedtracker = g.tracker
+	end
+
+	return associatedtracker
 end

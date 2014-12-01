@@ -29,3 +29,5 @@ type InvalidStepCountForResultCountException <: Exception end
 type UnexpectedTypeOnMoveToVertices <: Exception end
 type UnexpectedTypeOnMoveToEdges <: Exception end
 
+type EdgeDoesNotBelongToGraphException <: Exception end
+type VertexDoesNotBelongToGraphException <: Exception end

@@ -16,8 +16,6 @@ type TestKnowsType
 end
 
 function graphpopulationtest()
-	u = UUID.v1()
-
 	# create a graph
 	g = Graph()
 
