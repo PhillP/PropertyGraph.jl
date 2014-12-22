@@ -5,16 +5,27 @@ abstract Container
 immutable Unspecified end
 const UnspecifiedValue = Unspecified()
 
-function setpropertyvalue!(c::Container, propertykey::String, value::Any)
+function setpropertyvalue!(c::Container, propertykey::String, value::Any, withtracking::Bool = true)
 	# set a single property value on the supplied container
 	c.attachedproperties[propertykey] = value
-	trackchange(c)
+	if withtracking
+		trackchange(c)
+	end
 end
 
-function setpropertyvalues!(c::Container, properties::Dict{String, Any} )
+function setpropertyvalues!(c::Container, properties::Dict{String, Any} , withtracking::Bool = true)
 	# set multiple property values on the supplied container based on a supplied property dictionary
 	merge!(c.attachedproperties, properties)
-	trackchange(c)
+	if withtracking
+		trackchange(c)
+	end
+end
+
+function clearproperties!(c::Container , withtracking::Bool = true)
+	c.attachedproperties = Dict{String, Any}()
+	if withtracking
+		trackchange(c)
+	end
 end
 
 function get(c::Container, name::String, default::Any=UnspecifiedValue)

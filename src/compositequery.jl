@@ -22,6 +22,7 @@ type CompositeQuery
 	graph::Graph
 	previous::CompositeQuery
 	associatedfunction::Function
+	associatedexpression::Expr
 	inputtype::QueryResultType
 	outputtype::QueryResultType
 	option::QueryResultOption
@@ -31,6 +32,12 @@ type CompositeQuery
 	isgrouped::Bool
 	repeatcount::Integer
 	operationstepback::Integer
+	containspartiallyloadedresults::Bool
+
+	# loader declared Any instead of GraphLoader
+	# in order to avoid mutually circular type declaration
+	# see: https://github.com/JuliaLang/julia/issues/269
+	loader::Any
 
 	function CompositeQuery(g::Graph, outputtype::QueryResultType, option::QueryResultOption)
 		# Constructs a CompositeQuery for the specified Graph
@@ -46,6 +53,11 @@ type CompositeQuery
 		cq.result = Set{CompositeQueryResultItem}()
 		cq.repeatcount = 0
 		cq.operationstepback = 0
+		cq.containspartiallyloadedresults = false
+
+		if isdefined(g, :loader)
+			cq.loader = g.loader
+		end
 
 		return cq
 	end
@@ -55,6 +67,15 @@ type CompositeQuery
 
 		cq = CompositeQuery(g, outputtype, option)
 		cq.associatedfunction = associatedfunction
+
+		return cq
+	end
+
+	function CompositeQuery(g::Graph, outputtype::QueryResultType, option::QueryResultOption, associatedexpression::Expr)
+		# Constructs a CompositeQuery for the specified Graph with a specified where filter
+
+		cq = CompositeQuery(g, outputtype, option)
+		cq.associatedexpression = associatedexpression
 
 		return cq
 	end
@@ -70,6 +91,10 @@ type CompositeQuery
 		cq.depth = previous.depth + 1
 		cq.repeatcount = previous.repeatcount
 
+		if isdefined(previous, :loader)
+			cq.loader = previous.loader
+		end
+
 		return cq
 	end
 
@@ -78,6 +103,15 @@ type CompositeQuery
 
 		cq = CompositeQuery(previous, outputtype, option)
 		cq.associatedfunction = associatedfunction
+
+		return cq
+	end
+
+	function CompositeQuery(previous::CompositeQuery, outputtype::QueryResultType, option::QueryResultOption, associatedexpression::Expr)
+		# Constructs a CompositeQuery which extends a previous query and has an initial where filter expression
+
+		cq = CompositeQuery(previous, outputtype, option)
+		cq.associatedexpression = associatedexpression
 
 		return cq
 	end
@@ -362,6 +396,7 @@ function loop(cq::CompositeQuery, stepfunction::Function)
 	cqnew.operationstepback = stepfunction(cqnew)
 	cqnew.result = newresults
 	cqnew.isrealised = true
+	cqnew.containspartiallyloadedresults = cq.containspartiallyloadedresults
 
 	if cqnew.operationstepback > 0
 		cqnew.repeatcount = cqnew.repeatcount + 1
@@ -388,6 +423,7 @@ function merge(cq::CompositeQuery, stepfunction::Function, distinct::Bool)
 	distinctset = Set{Container}()
 	newresults = Set{CompositeQueryResultItem}()
 	cqnew = CompositeQuery(cq, cq.outputtype, NoneQueryResultOption)
+	cqnew.containspartiallyloadedresults = cq.containspartiallyloadedresults
 
 	if stepcount > 0
 		source = cqnew
@@ -401,6 +437,8 @@ function merge(cq::CompositeQuery, stepfunction::Function, distinct::Bool)
 				throw(InvalidStepCountForMergeException())
 			end
 		end
+
+		cqnew.containspartiallyloadedresults = cqnew.containspartiallyloadedresults || source.containspartiallyloadedresults
 
 		if isspecified(source.result)
 			for r in source.result
@@ -481,6 +519,9 @@ end
 #   latestmergecount
 
 function realise!(cq::CompositeQuery)
+	ispartial = false
+	sourceisprefiltered = false
+
 	# realise each part of the composite query in turn
 	# there is alot of scope for optimisation here to combine parts of the composite query
 	if !cq.isrealised
@@ -498,14 +539,38 @@ function realise!(cq::CompositeQuery)
 
 		if cq.inputtype == InitialQueryResult
 			items = Set{Container}()
-			if cq.outputtype == EdgeSetQueryResult
-				items = values(cq.graph.edges)
-			elseif cq.outputtype == VertexSetQueryResult
-				items = values(cq.graph.vertices)
+
+			if isdefined(cq, :loader)
+				loadfunction = loadedges
+				if cq.outputtype == EdgeSetQueryResult
+					# do nothing
+				elseif cq.outputtype == VertexSetQueryResult
+					loadfunction = loadvertices
+				else
+					throw(InvalidInputQueryResultTypeException())
+				end
+
+				if isdefined(cq, :associatedfunction)
+					sourceisprefiltered = true
+					items = loadfunction(cq.loader, cq.associatedfunction)
+				elseif isdefined(cq, :associatedexpression)
+					sourceisprefiltered = true
+					items = loadfunction(cq.loader, cq.associatedexpression)
+				else
+					items = loadfunction(cq.loader)
+				end
 			else
-				throw(InvalidInputQueryResultTypeException())
+				if cq.outputtype == EdgeSetQueryResult
+					items = values(cq.graph.edges)
+				elseif cq.outputtype == VertexSetQueryResult
+					items = values(cq.graph.vertices)
+				else
+					throw(InvalidInputQueryResultTypeException())
+				end
 			end
+
 			for i in items
+				ispartial = ispartial || i.partiallyloaded
 				push!(source, CompositeQueryResultItem(i))
 			end
 		else
@@ -520,7 +585,18 @@ function realise!(cq::CompositeQuery)
 			end
 
 			source = cq.previous.result
+
+			if cq.previous.containspartiallyloadedresults
+				if isdefined(cq, :loader)
+					# load missing data from the results
+					loadmissingdata(cq.loader, source)
+					cq.previous.containspartiallyloadedresults = false
+				end
+			end
 		end
+
+		# determine whether a check for missing data is required
+		loadcheckneeded = isdefined(cq, :loader) && (isdefined(cq, :associatedfunction) || isdefined(cq, :associatedexpression) && !sourceisprefiltered)
 
 		if cq.option == StoreResultOption
 			for r in source
@@ -537,6 +613,7 @@ function realise!(cq::CompositeQuery)
 				item = cq.associatedfunction(r)
 				if isspecified(item)
 					if isa(item,Vertex)
+						ispartial = ispartial || item.partiallyloaded
 						newresultitem = CompositeQueryResultItem(item, r)
 						push!(cq.result, newresultitem)
 					else
@@ -549,6 +626,7 @@ function realise!(cq::CompositeQuery)
 				item = cq.associatedfunction(r)
 				if isspecified(item)
 					if isa(item,Edge)
+						ispartial = ispartial || item.partiallyloaded
 						newresultitem = CompositeQueryResultItem(item, r)
 						push!(cq.result, newresultitem)
 					else
@@ -565,6 +643,7 @@ function realise!(cq::CompositeQuery)
 
 			if cq.inputtype == cq.outputtype || cq.inputtype == InitialQueryResult
 				# nothing to do
+				loadcheckneeded = false
 			elseif cq.inputtype == EdgeSetQueryResult && cq.outputtype == VertexSetQueryResult
 				if cq.option == HeadQueryResultOption
 					getitem = (r -> r.item.head)
@@ -588,26 +667,61 @@ function realise!(cq::CompositeQuery)
 				throw(InvalidInputOutputQueryOptionCombinationException())
 			end
 
+			if loadcheckneeded
+				# as a function or expression is being used, ensure the related items are fully loaded before being tested
+				# build up a list of the items that must be fully loaded
+				loadrequired = false
+				itemstoload = Set{Container}()
+
+				if getitemsubset != UnspecifiedValue
+					for r in source
+						item = getitem(r)
+						subset = getitemsubset(item)
+						for si in subset
+							if si.partiallyloaded
+								push!(itemstoload, si)
+								loadrequired = true
+							end
+						end
+					end
+				else
+					for r in source
+						item = getitem(r)
+						if item.partiallyloaded
+							push!(itemstoload, item)
+							loadrequired = true
+						end
+					end
+				end
+
+				if loadrequired
+					# load the missing data now if any was detected
+					loadmissingdata(cq.loader, itemstoload)
+				end
+			end
+
 			for r in source
 				item = getitem(r)
-
 				if getitemsubset != UnspecifiedValue
 					subset = getitemsubset(item)
 					for si in subset
 						cqi = CompositeQueryResultItem(si, r)
 						if doesitemmatchquery(cqi, cq)
+							ispartial = ispartial || item.partiallyloaded
 							push!(cq.result, cqi)
 						end
 					end
 				else
 					cqi = CompositeQueryResultItem(item, r)
-					if doesitemmatchquery(cqi, cq)
+					if sourceisprefiltered || doesitemmatchquery(cqi, cq)
+						ispartial = ispartial || item.partiallyloaded
 						push!(cq.result, cqi)
 					end
 				end
 			end
 		end
 
+		cq.containspartiallyloadedresults = ispartial
 		cq.isrealised = true
 	end
 end
@@ -624,10 +738,10 @@ function doesitemmatchquery(resultitem::CompositeQueryResultItem, cq::CompositeQ
 end
 
 # A union of the types that may be used as a source of queries
-QuerySource = Union(Graph,CompositeQuery,Dict{Any,CompositeQuery})
+QuerySource = Union(Graph,GraphLoader,CompositeQuery,Dict{Any,CompositeQuery})
 
 # A union of the types that may be used as operations of a query
-QueryOperation = Union(Function,(Function, Function))
+QueryOperation = Union(Function,(Function, Function),(Function, Expr))
 
 function query(source::QuerySource,operations::QueryOperation...)
 	# Builds a query from a source and series of operations
@@ -646,6 +760,8 @@ function query(source::QuerySource,operations::QueryOperation...)
 			if isa(operation,Function)
 				current = operation(current)
 			elseif isa(operation, (Function,Function))
+				current = operation[1](current, operation[2])
+			elseif isa(operation,(Function,Expr))
 				current = operation[1](current, operation[2])
 			end
 

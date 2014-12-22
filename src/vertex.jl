@@ -6,12 +6,13 @@ type Vertex <: Container
 	attachedproperties::Dict{String,Any}
 
 	graph::Any
-	# incomingedges and outgoingEdgens are declared Set{Container} instead of Sert{Edge}
+	# incomingedges and outgoingEdgens are declared Set{Container} instead of Set{Edge}
 	# in order to avoid mutually circular type declaration with Edge
 	# see: https://github.com/JuliaLang/julia/issues/269
 	incomingedges::Set{Container}
 	outgoingedges::Set{Container}
 	typelabel::String
+	partiallyloaded::Bool
 
 	function Vertex(properties::Dict{String,Any}=Dict{String,Any}())
 		# Construct a Vertex with a set of initial property values
@@ -25,6 +26,8 @@ type Vertex <: Container
 
 		v.incomingedges = Set{Container}()
 		v.outgoingedges = Set{Container}()
+
+		v.partiallyloaded = false
 
 		return v
 	end

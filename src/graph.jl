@@ -8,12 +8,13 @@ type Graph <: Container
 	edges::Dict{UUID.Uuid,Edge}
 	vertices::Dict{UUID.Uuid,Vertex}
 
-	loader::GraphLoader
-
 	# tracker defined ::Any instead of ::ChangeTracker
 	# in order to avoid mutually circular type declaration
 	# see: https://github.com/JuliaLang/julia/issues/269
 	tracker::Any
+
+	# a default graph loader for this graph
+	defaultloader::Any
 
 	function Graph(properties::Dict{String,Any}=Dict{String,Any}())
 		# Constructs a Property Graph with a set of property values
@@ -41,7 +42,7 @@ type Graph <: Container
 	end
 end
 
-function add!(g::Graph, v::Vertex)
+function add!(g::Graph, v::Vertex, withtracking::Bool = true)
 	# Add a vertex to the graph
 
 	# test whether the vertex already belongs to another graph
@@ -55,14 +56,18 @@ function add!(g::Graph, v::Vertex)
 	end
 
 	v.graph = g
-	trackadd(v)
+
+	if withtracking
+		trackadd(v)
+	end
+
 	g.vertices[v.id] = v
 
 	return v
 end
 
 
-function remove!(g::Graph, e::Edge)
+function remove!(g::Graph, e::Edge, withtracking::Bool = true)
 	belongstograph = false
 
 	# test whether the edge belongs to this graph
@@ -74,13 +79,16 @@ function remove!(g::Graph, e::Edge)
 		throw(EdgeDoesNotBelongToGraphException())
 	end
 
-	trackremove(e)
+	if withtracking
+		trackremove(e)
+	end
+
 	delete!(g.edges, e.id)
 	delete!(e.tail.outgoingedges, e)
 	delete!(e.head.incomingedges, e)
 end
 
-function remove!(g::Graph, v::Vertex)
+function remove!(g::Graph, v::Vertex, withtracking::Bool = true)
 	belongstograph = false
 
 	# test whether the edge belongs to this graph
@@ -103,14 +111,17 @@ function remove!(g::Graph, v::Vertex)
 	end
 
 	for e in edgestoremove
-		remove!(g, e)
+		remove!(g, e, withtracking)
 	end
 
-	trackremove(v)
+	if withtracking
+		trackremove(v)
+	end
+
 	delete!(g.vertices, v)
 end
 
-function add!(g::Graph, e::Edge)
+function add!(g::Graph, e::Edge, withtracking::Bool = true)
 	# Add an Edge to the Graph
 
 	# test whether the edge already belongs to another graph
@@ -134,7 +145,11 @@ function add!(g::Graph, e::Edge)
 	end
 
 	e.graph = g
-	trackadd(e)
+
+	if withtracking
+		trackadd(e)
+	end
+
 	g.edges[e.id] = e
 	push!(e.head.incomingedges,e)
 	push!(e.tail.outgoingedges,e)

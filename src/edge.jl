@@ -10,6 +10,7 @@ type Edge <: Container
 	head::Vertex
 	typelabel::String
 
+	partiallyloaded::Bool
 
 	function Edge(tail::Vertex, head::Vertex, properties::Dict{String,Any})
 		# Construct an edge from a pair of vertices with a set of property values
@@ -20,6 +21,8 @@ type Edge <: Container
 		e.typelabel = "Unspecified"
 		e.tail = tail
 		e.head = head
+
+		e.partiallyloaded = false
 
 		e.attachedproperties = properties
 
