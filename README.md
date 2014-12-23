@@ -41,17 +41,21 @@ averagepopulaton = query(graph,
 
 The above example and others are explained in the [wiki](https://github.com/PhillP/PropertyGraph.jl/wiki).
 
-For the moment, Graphs must be held entirely in memory.  This is an area for future development.
-
 ## Persistence
-This library will provide hooks and extension points to support persistence of graphs and the loading of portions of a graph on-demand.  The wiki describes how change tracking is implemented.  A store of changes is provided and can be used by persistence functionality to determine which vertices and edges have change and need to be persisted or removed.
+This library provides extension points to support persistence of graphs and the loading of portions of graphs on-demand. An implementation of this for a specific database / persistence technology will be provided as a seperate, related package.
+
+The wiki describes how change tracking is implemented.  A store of changes is provided and can be used by persistence functionality to determine which vertices and edges have change and need to be persisted or removed.
+
+Loading on demand is supported by extending the GraphLoader type and providing several required method implementations used to load subsets of graph data from a persistence store.  An instance of this type can be used as a source for a Query, and the PropertyGraph library will make the appropriate calls to obtain information about edges and vertices as needed to complete the query.
 
 ## Performance
-The focus of the library has initially been on supporting a useful and convenient query syntax.  There are a number of features that would be required to make this functionality perform well on larger data sets and this will be the subject of future work.
+The focus of the library has initially been on supporting a useful and convenient query syntax.
+
+Further testing is required, particularly against specific persistence implementations, and this is an error where additional effort is likely to be required.
 
 ## Installation
 
-Although PropertyGraph.jl is written to be compatible with both Julia 0.3 and 0.4, it will initially be available for Julia 0.4 only.  There have been errors encountered during testing on v0.3 due to issues that have already been resolved in Julia 0.4.
+Although PropertyGraph.jl is written to be compatible with both Julia 0.3 and 0.4, it is, at least initially, be available for Julia 0.4 only.  There have been errors encountered during testing on v0.3 due to issues that have already been resolved in Julia 0.4.
 
 Install PropertyGraph.jl with:
 ```julia
