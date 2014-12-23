@@ -51,7 +51,7 @@ Loading on demand is supported by extending the GraphLoader type and providing s
 ## Performance
 The focus of the library has initially been on supporting a useful and convenient query syntax.
 
-Further testing is required, particularly against specific persistence implementations, and this is an error where additional effort is likely to be required.
+Further testing is required, particularly against specific persistence implementations, and this is an area where additional effort is likely to be required.
 
 ## Installation
 
