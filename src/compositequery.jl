@@ -588,15 +588,12 @@ function realise!(cq::CompositeQuery)
 
 			if cq.previous.containspartiallyloadedresults
 				if isdefined(cq, :loader)
-					# load missing data from the results
+					# load missing data from the previous results
 					loadmissingdata(cq.loader, source)
 					cq.previous.containspartiallyloadedresults = false
 				end
 			end
 		end
-
-		# determine whether a check for missing data is required
-		loadcheckneeded = isdefined(cq, :loader) && (isdefined(cq, :associatedfunction) || isdefined(cq, :associatedexpression) && !sourceisprefiltered)
 
 		if cq.option == StoreResultOption
 			for r in source
@@ -637,6 +634,9 @@ function realise!(cq::CompositeQuery)
 		elseif cq.option == DistinctResultOption
 			cq.result = getdistinctresults(cq.previous)
 		else
+			# determine whether a further check for missing data is required
+			loadcheckneeded = isdefined(cq, :loader) && (isdefined(cq, :associatedfunction) || isdefined(cq, :associatedexpression) && !sourceisprefiltered)
+
 			# default the getitem function to returning the item given
 			getitem = r -> r.item
 			getitemsubset = UnspecifiedValue

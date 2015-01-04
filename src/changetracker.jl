@@ -1,6 +1,6 @@
 type ChangeTracker
 	newedges::Dict{UUID.Uuid,Edge}
-	newvertices::Dict{UUID.Uuid,Edge}
+	newvertices::Dict{UUID.Uuid,Vertex}
 
 	changedgraphs::Dict{UUID.Uuid,Graph}
 	changededges::Dict{UUID.Uuid,Edge}
@@ -10,26 +10,26 @@ type ChangeTracker
 	removedvertices::Dict{UUID.Uuid,Vertex}
 
 	ischanged::Bool
-end
 
-function ChangeTracker()
-	# Constructs a Property Graph with a set of property values
+	function ChangeTracker()
+		# Constructs a Property Graph with a set of property values
 
-	ct = new()
+		ct = new()
 
-	ct.newedges = Dict{UUID.Uuid,Edge}()
-	ct.newvertices = Dict{UUID.Uuid,Vertex}()
+		ct.newedges = Dict{UUID.Uuid,Edge}()
+		ct.newvertices = Dict{UUID.Uuid,Vertex}()
 
-	ct.changededges = Dict{UUID.Uuid,Edge}()
-	ct.changedvertices = Dict{UUID.Uuid,Vertex}()
-	ct.changedgraphs = Dict{UUID.Uuid,Graph}()
+		ct.changededges = Dict{UUID.Uuid,Edge}()
+		ct.changedvertices = Dict{UUID.Uuid,Vertex}()
+		ct.changedgraphs = Dict{UUID.Uuid,Graph}()
 
-	ct.removededges = Dict{UUID.Uuid,Edge}()
-	ct.removedvertices = Dict{UUID.Uuid,Vertex}()
+		ct.removededges = Dict{UUID.Uuid,Edge}()
+		ct.removedvertices = Dict{UUID.Uuid,Vertex}()
 
-	ct.ischanged = false
+		ct.ischanged = false
 
-	return ct
+		return ct
+	end
 end
 
 function trackadd!(ct::ChangeTracker, v::Vertex)
@@ -62,13 +62,13 @@ function trackchange!(ct::ChangeTracker, g::Graph)
 	ct.ischanged =  true
 end
 
-function trackremove(ct::ChangeTracker, v::Vertex)
+function trackremove!(ct::ChangeTracker, v::Vertex)
 	ct.removedvertices[v.id] = v
 
 	ct.ischanged =  true
 end
 
-function trackremove(ct::ChangeTracker, e::Edge)
+function trackremove!(ct::ChangeTracker, e::Edge)
 	ct.removededges[e.id] = e
 
 	ct.ischanged = true
@@ -86,4 +86,28 @@ function clearchanges(ct::ChangeTracker)
 	ct.removedvertices = Dict{UUID.Uuid,Vertex}()
 
 	ct.ischanged =  false
+end
+
+function clearnewvertex(ct::ChangeTracker, v::Vertex)
+	delete!(ct.newvertices, v.id)
+end
+
+function clearnewedge(ct::ChangeTracker, e::Edge)
+	delete!(ct.newedges, e.id)
+end
+
+function clearchangedvertex(ct::ChangeTracker, v::Vertex)
+	delete!(ct.changedvertices, v.id)
+end
+
+function clearchangededge(ct::ChangeTracker, e::Edge)
+	delete!(ct.changededges, e.id)
+end
+
+function clearremovedvertex(ct::ChangeTracker, v::Vertex)
+	delete!(ct.removedvertices, v.id)
+end
+
+function clearremovededge(ct::ChangeTracker, e::Edge)
+	delete!(ct.removededges, e.id)
 end

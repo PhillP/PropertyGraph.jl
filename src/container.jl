@@ -47,7 +47,7 @@ function trackchange(c::Container)
 	associatedtracker = gettracker(c)
 
 	if associatedtracker != UnspecifiedValue
-		trackchange!(tracker,c)
+		trackchange!(associatedtracker,c)
 	end
 end
 
@@ -55,14 +55,14 @@ function trackadd(c::Container)
 	associatedtracker = gettracker(c)
 
 	if associatedtracker != UnspecifiedValue
-		trackadd!(tracker,c)
+		trackadd!(associatedtracker,c)
 	end
 end
 
-function trackdelete(c::Container)
+function trackremove(c::Container)
 	associatedtracker = gettracker(c)
 
 	if associatedtracker != UnspecifiedValue
-		trackdelete!(tracker,c)
+		trackremove!(associatedtracker,c)
 	end
 end

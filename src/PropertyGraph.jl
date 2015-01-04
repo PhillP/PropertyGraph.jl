@@ -31,6 +31,7 @@ export distinct, realise!, merge, mergedistinct, filter, loop, newonly
 export previousresultcount, resultcount
 export loadmissingdata,loadedges,loadvertices
 export QuerySource, QueryOperation, query
+export clearchanges, clearnewvertex, clearnewedge, clearchangedvertex, clearchangededge, clearremovedvertex, clearremovededge
 
 include("exceptions.jl")
 include("container.jl")
